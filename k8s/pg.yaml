@@ -48,8 +48,7 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - nodePort: 30432
-      port: 5432
+    - port: 5432
   selector:
     app: postgres
 ---

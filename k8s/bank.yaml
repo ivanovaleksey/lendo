@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bank-service
+  name: bank
 spec:
   type: NodePort
   selector:
@@ -12,7 +12,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bank-deployment
+  name: bank
 spec:
   selector:
     matchLabels:

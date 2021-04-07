@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrations
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: migrations
+          image: lendo/migrations:v0.1
+          imagePullPolicy: "Never"
+          command: ["migrate",  "-path", ".", "-database", "postgres://lendouser:lendopass@postgres/lendo?sslmode=disable", "up"]
+      restartPolicy: Never
