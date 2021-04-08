@@ -1,5 +1,6 @@
 API_VERSION ?= v0.1
-MIGRATIONS_VERSION ?= v0.1
+MIGRATIONS_API_VERSION ?= v0.1
+MIGRATIONS_REGISTRY_VERSION ?= v0.1
 COMPONENT_EXE = bin/$(COMPONENT)
 
 ifneq (,$(wildcard ./.env))
@@ -18,7 +19,8 @@ build-app:
 
 .PHONY: build-image-migrations
 build-image-migrations:
-	docker build -t lendo/migrations:$(MIGRATIONS_VERSION) -f docker/migrations.Dockerfile .
+	docker build -t lendo/migrations-api:$(MIGRATIONS_API_VERSION) -f docker/migrations-api.Dockerfile .
+	docker build -t lendo/migrations-registry:$(MIGRATIONS_REGISTRY_VERSION) -f docker/migrations-registry.Dockerfile .
 
 .PHONY: build-image-api
 build-image-api:
@@ -29,9 +31,13 @@ test-unit:
 	go test -v -count=1 ./api/...
 	go test -v -count=1 ./registry/...
 
-.PHONY: create-db
-create-db:
+.PHONY: create-db-server
+create-db-server:
 	kubectl apply -f k8s/pg.yaml
+
+.PHONY: create-db
+create-db: create-db-server
+	kubectl apply -f k8s/create_db.yaml
 
 .PHONY: migrate-db
 migrate-db: create-db

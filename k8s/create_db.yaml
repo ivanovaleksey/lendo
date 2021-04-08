@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+  labels:
+    app: db
+data:
+  DB_API: api
+  DB_REGISTRY: registry
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-db-api
+  labels:
+    app: db
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: create-db-api
+          image: postgres:12
+          imagePullPolicy: "Never"
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: DB_API
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_PASSWORD
+          command: [ "createdb" ]
+          args: [ "-h", "postgres", "-U", "$(DB_USER)", "$(DB_NAME)" ]
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-db-registry
+  labels:
+    app: db
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: create-db-registry
+          image: postgres:12
+          imagePullPolicy: "Never"
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: DB_REGISTRY
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: postgres-config
+                  key: POSTGRES_PASSWORD
+          command: [ "createdb" ]
+          args: [ "-h", "postgres", "-U", "$(DB_USER)", "$(DB_NAME)" ]
+      restartPolicy: Never

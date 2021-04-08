@@ -2,12 +2,14 @@ package config
 
 import (
 	"github.com/ivanovaleksey/lendo/pkg/db"
+	"github.com/ivanovaleksey/lendo/pkg/nats"
 	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
-	Addr string    `required:"true"`
-	DB   db.Config `envconfig:"db"`
+	Addr string      `required:"true"`
+	DB   db.Config   `envconfig:"db"`
+	NATS nats.Config `envconfig:"nats"`
 }
 
 func New() (Config, error) {

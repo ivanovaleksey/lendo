@@ -3,7 +3,7 @@ package models
 type ApplicationStatus string
 
 const (
-	ApplicationStatusUnknown   = ""
+	ApplicationStatusNew       = "new"
 	ApplicationStatusPending   = "pending"
 	ApplicationStatusCompleted = "completed"
 	ApplicationStatusRejected  = "rejected"

@@ -1,14 +1,61 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: migrations
+  name: migrate-api
+  labels:
+    app: db
 spec:
   backoffLimit: 0
   template:
     spec:
       containers:
-        - name: migrations
-          image: lendo/migrations:v0.1
+        - name: migrate-api
+          image: lendo/migrations-api:v0.1
           imagePullPolicy: "Never"
-          command: ["migrate",  "-path", ".", "-database", "postgres://lendouser:lendopass@postgres/lendo?sslmode=disable", "up"]
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: DB_API
+          command: [
+            "migrate",
+            "-path", ".",
+            "-database", "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres/$(DB_NAME)?sslmode=disable",
+            "up"
+          ]
+      restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-registry
+  labels:
+    app: db
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: migrate-registry
+          image: lendo/migrations-registry:v0.1
+          imagePullPolicy: "Never"
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: db-config
+                  key: DB_REGISTRY
+          command: [
+            "migrate",
+            "-path", ".",
+            "-database", "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres/$(DB_NAME)?sslmode=disable",
+            "up"
+          ]
       restartPolicy: Never

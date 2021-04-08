@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/DATA-DOG/go-txdb"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -37,4 +38,8 @@ func NewTestDB(t *testing.T, cfg Config) *DB {
 	require.NoError(t, db.Ping())
 
 	return &DB{DB: db}
+}
+
+func (db *DB) ComponentName() string {
+	return "db"
 }

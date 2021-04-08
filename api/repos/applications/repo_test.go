@@ -10,6 +10,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math/rand"
 	"testing"
 )
 
@@ -54,21 +55,20 @@ func TestImpl_Create(t *testing.T) {
 	fx := newFixture(t)
 	defer fx.Finish()
 
-	item := models.NewApplication{
-		FirstName: gofakeit.FirstName(),
-		LastName:  gofakeit.LastName(),
+	item := models.Application{
+		NewApplication: models.NewApplication{
+			FirstName: gofakeit.FirstName(),
+			LastName:  gofakeit.LastName(),
+		},
+		Status: randomStatus(),
 	}
 
 	id, err := fx.repo.Create(fx.ctx, item)
 
 	require.NoError(t, err)
-
+	item.ID = id
 	application := fx.getApplication(id)
-	expected := models.Application{
-		ID:             id,
-		NewApplication: item,
-	}
-	assert.Equal(t, expected, application)
+	assert.Equal(t, item, application)
 }
 
 type fixture struct {
@@ -76,7 +76,7 @@ type fixture struct {
 	ctx context.Context
 	db  *db.DB
 
-	repo Repo
+	repo *Repo
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -112,4 +112,14 @@ func (fx *fixture) getApplication(id uuid.UUID) (item models.Application) {
 	err := fx.db.GetContext(fx.ctx, &item, q, id)
 	require.NoError(fx.t, err)
 	return
+}
+
+func randomStatus() models.ApplicationStatus {
+	all := []models.ApplicationStatus{
+		models.ApplicationStatusNew,
+		models.ApplicationStatusPending,
+		models.ApplicationStatusCompleted,
+		models.ApplicationStatusRejected,
+	}
+	return all[rand.Intn(len(all))]
 }

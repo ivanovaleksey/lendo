@@ -1,11 +1,15 @@
 package bank
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestImpl_CreateApplication(t *testing.T) {
-	t.Skip("not implemented")
+	// todo: implement
+	t.Fail()
 }
 
 func TestImpl_GetApplicationStatus(t *testing.T) {
-	t.Skip("not implemented")
+	// todo: implement
+	t.Fail()
 }

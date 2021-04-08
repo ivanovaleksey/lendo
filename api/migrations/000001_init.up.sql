@@ -6,8 +6,8 @@ CREATE TABLE applications (
     last_name  TEXT NOT NULL,
     status     TEXT NOT NULL,
 
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
 
     PRIMARY KEY (id)
 );

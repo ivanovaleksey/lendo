@@ -5,7 +5,6 @@ metadata:
   labels:
     app: postgres
 data:
-  POSTGRES_DB: lendo
   POSTGRES_USER: lendouser
   POSTGRES_PASSWORD: lendopass
 ---
@@ -77,8 +76,8 @@ spec:
                 name: postgres-config
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-              name: postgredb
+              name: postgresdb
       volumes:
-        - name: postgredb
+        - name: postgresdb
           persistentVolumeClaim:
             claimName: postgres-pv-claim

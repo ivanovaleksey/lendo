@@ -1,4 +1,4 @@
 FROM migrate/migrate
 
 WORKDIR /migrations
-COPY migrations .
+COPY api/migrations/ .

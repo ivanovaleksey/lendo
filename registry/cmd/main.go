@@ -3,9 +3,15 @@ package main
 import (
 	"context"
 	"github.com/ivanovaleksey/lendo/pkg/closer"
+	"github.com/ivanovaleksey/lendo/pkg/component"
+	"github.com/ivanovaleksey/lendo/pkg/db"
+	"github.com/ivanovaleksey/lendo/pkg/nats"
+	"github.com/ivanovaleksey/lendo/registry/bank"
 	"github.com/ivanovaleksey/lendo/registry/config"
-	"github.com/ivanovaleksey/lendo/registry/consumer"
 	"github.com/ivanovaleksey/lendo/registry/poller"
+	"github.com/ivanovaleksey/lendo/registry/pubsub/applications"
+	"github.com/ivanovaleksey/lendo/registry/repos/jobs"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"syscall"
 	"time"
@@ -14,53 +20,71 @@ import (
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	// todo: should cancel on close?
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
 	cfg, err := config.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	runApps(ctx, cfg)
+	if err := runApps(ctx, cfg); err != nil {
+		log.Error(err)
+	}
 }
 
-func runApps(ctx context.Context, cfg config.Config) {
-	appCloser := closer.New(syscall.SIGTERM, syscall.SIGINT)
+func runApps(ctx context.Context, cfg config.Config) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	appCloser.Add(runApp(ctx, "consumer", consumer.New()))
-	appCloser.Add(runApp(ctx, "poller", poller.New()))
+	db, err := db.New(cfg.DB)
+	if err != nil {
+		return errors.Wrap(err, "can't create db")
+	}
+
+	natsClient, err := nats.New(cfg.NATS)
+	if err != nil {
+		return errors.Wrap(err, "can't create nats client")
+	}
+
+	appCloser := closer.New(syscall.SIGTERM, syscall.SIGINT)
+	appCloser.Add(func() error {
+		cancel()
+		return nil
+	})
+
+	{
+		repo := jobsRepo.New(db)
+		handler := applicationsPubSub.NewNewApplicationHandler(repo)
+
+		opts := []nats.ConsumerOption{
+			nats.WithClient(natsClient),
+			nats.WithQueue("registry"),
+			nats.WithSubject("applications.new"),
+			nats.WithHandler(handler),
+			nats.WithComponentName("consumer.applications.new"),
+		}
+		closure := component.Run(ctx, nats.NewConsumer(opts...))
+		appCloser.Add(closure)
+	}
+
+	{
+		bankClient := bank.NewClient(cfg.Bank)
+		pub := applicationsPubSub.NewPub(natsClient)
+
+		closure := component.Run(ctx, poller.New(bankClient, db, pub))
+		appCloser.Add(closure)
+	}
+
+	appCloser.Add(func() error {
+		const delay = 2 * time.Second
+		time.Sleep(delay)
+		return component.Close(natsClient)
+	})
+	appCloser.Add(func() error {
+		return component.Close(db)
+	})
 
 	appCloser.Wait()
-}
-
-type App interface {
-	Run(context.Context) error
-	Close() error
-}
-
-func runApp(ctx context.Context, name string, app App) func() error {
-	const closeTimeout = 5 * time.Second
-
-	logger := log.WithField("component", name)
-
-	go func() {
-		logger.Debug("running")
-		if err := app.Run(ctx); err != nil {
-			logger.Errorf("error: %v", err)
-			return
-		}
-	}()
-
-	return func() error {
-		logger.Debug("closing")
-		cl := closer.NewTimeoutCloser(app, closeTimeout)
-		if err := cl.Close(); err != nil {
-			logger.Errorf("close error: %v", err)
-			return err
-		}
-		logger.Debug("closed")
-		return nil
-	}
+	// todo: is it possible to return close error?
+	return nil
 }

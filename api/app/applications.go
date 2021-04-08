@@ -1,9 +1,10 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	applicationsRepo "github.com/ivanovaleksey/lendo/api/repos/applications"
+	"github.com/ivanovaleksey/lendo/api/services/applications"
 	"github.com/ivanovaleksey/lendo/pkg/models"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -11,6 +12,12 @@ import (
 	"net/http"
 	"strconv"
 )
+
+type ApplicationsService interface {
+	GetList(ctx context.Context, params applicationsSrv.GetListParams) ([]models.Application, int, error)
+	GetByID(ctx context.Context, id uuid.UUID) (models.Application, error)
+	Create(ctx context.Context, item models.NewApplication) (uuid.UUID, error)
+}
 
 type GetApplicationsResponse struct {
 	Items []models.Application `json:"items"`
@@ -21,7 +28,7 @@ func (api *API) GetApplications() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
 
-		var params applicationsRepo.GetListParams
+		var params applicationsSrv.GetListParams
 		if value := request.URL.Query().Get("offset"); value != "" {
 			offset, err := strconv.Atoi(value)
 			if err != nil {
@@ -48,7 +55,7 @@ func (api *API) GetApplications() http.HandlerFunc {
 		}
 		params.Status = status
 
-		applications, total, err := api.applicationsRepo.GetList(ctx, params)
+		applications, total, err := api.applicationsSrv.GetList(ctx, params)
 		if err != nil {
 			log.Error(errors.Wrap(err, "can't get applications"))
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -83,7 +90,7 @@ func (api *API) GetApplication() http.HandlerFunc {
 			return
 		}
 
-		application, err := api.applicationsRepo.GetByID(ctx, id)
+		application, err := api.applicationsSrv.GetByID(ctx, id)
 		err = json.NewEncoder(writer).Encode(application)
 		if err != nil {
 			log.Error(errors.Wrap(err, "can't encode response"))
@@ -119,7 +126,7 @@ func (api *API) CreateApplication() http.HandlerFunc {
 			return
 		}
 
-		id, err := api.applicationsRepo.Create(ctx, application)
+		id, err := api.applicationsSrv.Create(ctx, application)
 		resp := CreateApplicationResponse{ID: id}
 		err = json.NewEncoder(writer).Encode(resp)
 		if err != nil {

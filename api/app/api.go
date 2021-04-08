@@ -4,8 +4,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/ivanovaleksey/lendo/api/config"
-	"github.com/ivanovaleksey/lendo/api/repos/applications"
-	"github.com/ivanovaleksey/lendo/pkg/db"
 	"net/http"
 )
 
@@ -14,15 +12,16 @@ type API struct {
 	router    chi.Router
 	validator *validator.Validate
 
-	applicationsRepo applicationsRepo.Repo
+	applicationsSrv ApplicationsService
 }
 
-func New(cfg config.Config, db *db.DB) *API {
+func New(cfg config.Config, opts ...Option) *API {
 	app := &API{
 		cfg:       cfg,
 		validator: validator.New(),
-
-		applicationsRepo: applicationsRepo.New(db),
+	}
+	for _, opt := range opts {
+		opt(app)
 	}
 	app.initRouter()
 	return app

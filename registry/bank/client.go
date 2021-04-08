@@ -13,13 +13,14 @@ import (
 	"time"
 )
 
-type impl struct {
+// Client interacts with a bank system.
+type Client struct {
 	cfg        Config
 	httpClient *http.Client
 }
 
-func New(cfg Config) Client {
-	client := &impl{
+func NewClient(cfg Config) *Client {
+	client := &Client{
 		cfg: cfg,
 		httpClient: &http.Client{
 			Timeout: 3 * time.Second,
@@ -28,7 +29,13 @@ func New(cfg Config) Client {
 	return client
 }
 
-func (client *impl) CreateApplication(ctx context.Context, application models.Application) (models.ApplicationStatus, error) {
+func (client *Client) CreateApplication(ctx context.Context, application models.Application) (models.ApplicationStatus, error) {
+	type requestBody struct {
+		ID        uuid.UUID `json:"id"`
+		FirstName string    `json:"first_name"`
+		LastName  string    `json:"last_name"`
+	}
+
 	const methodPath = "/api/applications"
 
 	reqURL, err := url.Parse(client.cfg.URL)
@@ -37,11 +44,16 @@ func (client *impl) CreateApplication(ctx context.Context, application models.Ap
 	}
 	reqURL.Path = path.Join(reqURL.Path, methodPath)
 
-	var body bytes.Buffer
-	if err := json.NewEncoder(&body).Encode(application); err != nil {
+	var reqBody bytes.Buffer
+	var reqPayload = requestBody{
+		ID:        application.ID,
+		FirstName: application.FirstName,
+		LastName:  application.LastName,
+	}
+	if err := json.NewEncoder(&reqBody).Encode(reqPayload); err != nil {
 		return "", errors.Wrap(err, "can't encode request body")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL.String(), &body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL.String(), &reqBody)
 	if err != nil {
 		return "", errors.Wrap(err, "can't create request")
 	}
@@ -62,7 +74,7 @@ func (client *impl) CreateApplication(ctx context.Context, application models.Ap
 	return models.ApplicationStatus(respBody.Status), nil
 }
 
-func (client *impl) GetApplicationStatus(ctx context.Context, id uuid.UUID) (models.ApplicationStatus, error) {
+func (client *Client) GetApplicationStatus(ctx context.Context, id uuid.UUID) (models.ApplicationStatus, error) {
 	const methodPath = "/api/jobs"
 
 	reqURL, err := url.Parse(client.cfg.URL)
