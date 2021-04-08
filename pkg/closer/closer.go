@@ -58,7 +58,7 @@ func (c *Closer) CloseAll() {
 		for i := 0; i < cap(errs); i++ {
 			err := <-errs
 			if err != nil {
-				log.Printf("closer error: %v\n", err)
+				log.Errorf("closer error: %v\n", err)
 			}
 		}
 	})

@@ -37,8 +37,7 @@ func (h *ApplicationStatusChangedHandler) Handle(msg *nats.Msg) {
 		return
 	}
 
-	// todo: think about ctx
-	err = h.repo.UpdateStatus(context.TODO(), change)
+	err = h.repo.UpdateStatus(context.Background(), change)
 	if err != nil {
 		err = errors.Wrap(err, "can't update status")
 		h.logger.Error(err)

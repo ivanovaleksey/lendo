@@ -21,7 +21,6 @@ type Poller struct {
 	numWorkers int
 
 	workersWg     sync.WaitGroup
-	workersCtx    context.Context
 	workersCancel context.CancelFunc
 }
 
@@ -36,7 +35,8 @@ func New(bank handlers.Bank, db *db.DB, notifier handlers.Notifier) *Poller {
 }
 
 func (p *Poller) Run(ctx context.Context) error {
-	p.workersCtx, p.workersCancel = context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	p.workersCancel = cancel
 
 	for i := 0; i < p.numWorkers; i++ {
 		p.workersWg.Add(1)
@@ -45,7 +45,7 @@ func (p *Poller) Run(ctx context.Context) error {
 
 			worker := p.newWorker(id + 1)
 			worker.Run(ctx)
-		}(p.workersCtx, i)
+		}(ctx, i)
 	}
 
 	return nil

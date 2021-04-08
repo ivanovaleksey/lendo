@@ -92,10 +92,10 @@ func runApps(ctx context.Context, cfg config.Config) error {
 		return closeSrv(&srv)
 	})
 	appCloser.Add(func() error {
-		return component.Close(natsClient)
+		return component.Close(natsClient, component.CloseDelay)
 	})
 	appCloser.Add(func() error {
-		return component.Close(db)
+		return component.Close(db, component.CloseDelay)
 	})
 
 	go func() {
@@ -107,7 +107,6 @@ func runApps(ctx context.Context, cfg config.Config) error {
 	}()
 
 	appCloser.Wait()
-	// todo: is it possible to return close error?
 	return nil
 }
 

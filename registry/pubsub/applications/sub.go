@@ -43,8 +43,7 @@ func (h *NewApplicationHandler) Handle(msg *nats.Msg) {
 		Status:      models.JobStatusNew,
 		Application: application,
 	}
-	// todo: think about ctx
-	id, err := h.repo.CreateJob(context.TODO(), job)
+	id, err := h.repo.CreateJob(context.Background(), job)
 	if err != nil {
 		err = errors.Wrap(err, "can't create job")
 		h.logger.Error(err)

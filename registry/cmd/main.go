@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -76,15 +75,12 @@ func runApps(ctx context.Context, cfg config.Config) error {
 	}
 
 	appCloser.Add(func() error {
-		const delay = 2 * time.Second
-		time.Sleep(delay)
-		return component.Close(natsClient)
+		return component.Close(natsClient, component.CloseDelay)
 	})
 	appCloser.Add(func() error {
-		return component.Close(db)
+		return component.Close(db, component.CloseDelay)
 	})
 
 	appCloser.Wait()
-	// todo: is it possible to return close error?
 	return nil
 }
