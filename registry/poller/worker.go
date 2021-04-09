@@ -4,16 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"github.com/ivanovaleksey/lendo/pkg/db"
+	"github.com/ivanovaleksey/lendo/pkg/ticker"
 	"github.com/ivanovaleksey/lendo/registry/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type worker struct {
 	db       *db.DB
 	logger   log.FieldLogger
+	ticker   ticker.Ticker
 	handlers map[models.JobStatus]JobHandler
 }
 
@@ -22,14 +23,11 @@ type JobHandler interface {
 }
 
 func (w *worker) Run(ctx context.Context) error {
-	const tickTime = 10 * time.Second
-
-	ticker := time.NewTicker(tickTime)
-	defer ticker.Stop()
+	defer w.ticker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-w.ticker.Tick():
 			if err := w.doWork(ctx); err != nil {
 				w.logger.Error(err)
 			}
@@ -77,6 +75,8 @@ func (w *worker) doWorkTx(ctx context.Context, tx *sqlx.Tx) error {
 	case err != nil:
 		return errors.Wrap(err, "can't get job")
 	}
+
+	log.Debug(job)
 
 	handler, ok := w.handlers[job.Status]
 	if !ok {

@@ -29,13 +29,13 @@ func NewClient(cfg Config) *Client {
 	return client
 }
 
-func (client *Client) CreateApplication(ctx context.Context, application models.Application) (models.ApplicationStatus, error) {
-	type requestBody struct {
-		ID        uuid.UUID `json:"id"`
-		FirstName string    `json:"first_name"`
-		LastName  string    `json:"last_name"`
-	}
+type createApplicationBody struct {
+	ID        uuid.UUID `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+}
 
+func (client *Client) CreateApplication(ctx context.Context, application models.Application) (models.ApplicationStatus, error) {
 	const methodPath = "/api/applications"
 
 	reqURL, err := url.Parse(client.cfg.URL)
@@ -45,7 +45,7 @@ func (client *Client) CreateApplication(ctx context.Context, application models.
 	reqURL.Path = path.Join(reqURL.Path, methodPath)
 
 	var reqBody bytes.Buffer
-	var reqPayload = requestBody{
+	var reqPayload = createApplicationBody{
 		ID:        application.ID,
 		FirstName: application.FirstName,
 		LastName:  application.LastName,
@@ -64,14 +64,26 @@ func (client *Client) CreateApplication(ctx context.Context, application models.
 	}
 	defer resp.Body.Close()
 
-	var respBody struct {
-		Status string `json:"status"`
+	switch code := resp.StatusCode; code {
+	case 200:
+		var respBody struct {
+			Status string `json:"status"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+			return "", errors.Wrap(err, "can't decode response body")
+		}
+		return models.ApplicationStatus(respBody.Status), nil
+	case 400:
+		var respBody struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+			return "", errors.Wrap(err, "can't decode response body")
+		}
+		return "", Error{Code: code, Message: respBody.Error}
+	default:
+		return "", Error{Code: code}
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-		return "", errors.Wrap(err, "can't decode response body")
-	}
-
-	return models.ApplicationStatus(respBody.Status), nil
 }
 
 func (client *Client) GetApplicationStatus(ctx context.Context, id uuid.UUID) (models.ApplicationStatus, error) {
@@ -99,12 +111,24 @@ func (client *Client) GetApplicationStatus(ctx context.Context, id uuid.UUID) (m
 	}
 	defer resp.Body.Close()
 
-	var respBody struct {
-		Status string `json:"status"`
+	switch code := resp.StatusCode; code {
+	case 200:
+		var respBody struct {
+			Status string `json:"status"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+			return "", errors.Wrap(err, "can't decode response body")
+		}
+		return models.ApplicationStatus(respBody.Status), nil
+	case 400, 404:
+		var respBody struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+			return "", errors.Wrap(err, "can't decode response body")
+		}
+		return "", Error{Code: code, Message: respBody.Error}
+	default:
+		return "", Error{Code: code}
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
-		return "", errors.Wrap(err, "can't decode response body")
-	}
-
-	return models.ApplicationStatus(respBody.Status), nil
 }

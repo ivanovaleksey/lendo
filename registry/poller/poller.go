@@ -7,15 +7,18 @@ import (
 	"github.com/ivanovaleksey/lendo/registry/poller/handlers"
 	log "github.com/sirupsen/logrus"
 	"sync"
+	"time"
 )
 
 const (
-	numWorkers = 2
+	numWorkers     = 2
+	tickerDuration = 10 * time.Second
 )
 
 type Poller struct {
-	bank     handlers.Bank
-	notifier handlers.Notifier
+	bank           handlers.Bank
+	notifier       handlers.Notifier
+	tickerProvider TickerProvider
 
 	db         *db.DB
 	numWorkers int
@@ -24,12 +27,13 @@ type Poller struct {
 	workersCancel context.CancelFunc
 }
 
-func New(bank handlers.Bank, db *db.DB, notifier handlers.Notifier) *Poller {
+func New(opts ...Option) *Poller {
 	p := &Poller{
-		bank:       bank,
-		db:         db,
-		notifier:   notifier,
-		numWorkers: numWorkers,
+		numWorkers:     numWorkers,
+		tickerProvider: stdTickerProvider{duration: tickerDuration},
+	}
+	for _, opt := range opts {
+		opt(p)
 	}
 	return p
 }
@@ -40,6 +44,7 @@ func (p *Poller) Run(ctx context.Context) error {
 
 	for i := 0; i < p.numWorkers; i++ {
 		p.workersWg.Add(1)
+
 		go func(ctx context.Context, id int) {
 			defer p.workersWg.Done()
 
@@ -59,6 +64,7 @@ func (p *Poller) newWorker(id int) *worker {
 	w := &worker{
 		db:     p.db,
 		logger: logger,
+		ticker: p.tickerProvider.NewTicker(),
 		handlers: map[models.JobStatus]JobHandler{
 			models.JobStatusNew:     handlers.NewNewJobHandler(p.bank, p.notifier),
 			models.JobStatusPending: handlers.NewPendingJobHandler(p.bank, p.notifier),

@@ -70,7 +70,12 @@ func runApps(ctx context.Context, cfg config.Config) error {
 		bankClient := bank.NewClient(cfg.Bank)
 		pub := applicationsPubSub.NewPub(natsClient)
 
-		closure := component.Run(ctx, poller.New(bankClient, db, pub))
+		opts := []poller.Option{
+			poller.WithDB(db),
+			poller.WithBank(bankClient),
+			poller.WithNotifier(pub),
+		}
+		closure := component.Run(ctx, poller.New(opts...))
 		appCloser.Add(closure)
 	}
 

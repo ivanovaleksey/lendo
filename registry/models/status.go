@@ -3,7 +3,7 @@ package models
 type JobStatus string
 
 const (
-	JobStatusNew     = "new"
-	JobStatusPending = "pending"
-	JobStatusDone    = "done"
+	JobStatusNew     JobStatus = "new"
+	JobStatusPending JobStatus = "pending"
+	JobStatusDone    JobStatus = "done"
 )

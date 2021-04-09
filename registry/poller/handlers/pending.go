@@ -33,7 +33,7 @@ func (h *PendingJobHandler) Handle(ctx context.Context, tx sqlx.ExecerContext, j
 		return errors.Wrap(err, "can't get application status")
 	}
 
-	if status == commonModels.ApplicationStatusPending {
+	if status == job.Application.Status {
 		logger.Debug("not ready yet")
 		return nil
 	}
