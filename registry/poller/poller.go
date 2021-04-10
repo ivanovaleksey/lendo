@@ -5,20 +5,22 @@ import (
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	"github.com/ivanovaleksey/lendo/registry/models"
 	"github.com/ivanovaleksey/lendo/registry/poller/handlers"
-	log "github.com/sirupsen/logrus"
+	"github.com/ivanovaleksey/lendo/registry/poller/worker"
 	"sync"
 	"time"
 )
 
 const (
-	numWorkers     = 2
-	tickerDuration = 10 * time.Second
+	defaultNumWorkers = 2
+	tickerDuration    = 10 * time.Second
 )
 
 type Poller struct {
-	bank           handlers.Bank
-	notifier       handlers.Notifier
-	tickerProvider TickerProvider
+	bank          handlers.Bank
+	repo          handlers.Repo
+	notifier      handlers.Notifier
+	workerFactory WorkerFactory
+	tickerFactory TickerFactory
 
 	db         *db.DB
 	numWorkers int
@@ -29,8 +31,9 @@ type Poller struct {
 
 func New(opts ...Option) *Poller {
 	p := &Poller{
-		numWorkers:     numWorkers,
-		tickerProvider: stdTickerProvider{duration: tickerDuration},
+		numWorkers:    defaultNumWorkers,
+		workerFactory: stdWorkerFactory{},
+		tickerFactory: stdTickerFactory{duration: tickerDuration},
 	}
 	for _, opt := range opts {
 		opt(p)
@@ -48,28 +51,23 @@ func (p *Poller) Run(ctx context.Context) error {
 		go func(ctx context.Context, id int) {
 			defer p.workersWg.Done()
 
-			worker := p.newWorker(id + 1)
-			worker.Run(ctx)
+			w := p.newWorker(id + 1)
+			w.Run(ctx)
 		}(ctx, i)
 	}
 
 	return nil
 }
 
-func (p *Poller) newWorker(id int) *worker {
-	logger := log.WithFields(log.Fields{
-		"component": "worker",
-		"id":        id,
-	})
-	w := &worker{
-		db:     p.db,
-		logger: logger,
-		ticker: p.tickerProvider.NewTicker(),
-		handlers: map[models.JobStatus]JobHandler{
-			models.JobStatusNew:     handlers.NewNewJobHandler(p.bank, p.notifier),
-			models.JobStatusPending: handlers.NewPendingJobHandler(p.bank, p.notifier),
-		},
+func (p *Poller) newWorker(id int) Worker {
+	opts := []worker.Option{
+		worker.WithID(id),
+		worker.WithTxFactory(db.NewTxFactory(p.db)),
+		worker.WithTicker(p.tickerFactory.NewTicker()),
+		worker.WithHandler(models.JobStatusNew, handlers.NewNewJobHandler(p.bank, p.repo, p.notifier)),
+		worker.WithHandler(models.JobStatusPending, handlers.NewPendingJobHandler(p.bank, p.repo, p.notifier)),
 	}
+	w := p.workerFactory.NewWorker(opts...)
 	return w
 }
 

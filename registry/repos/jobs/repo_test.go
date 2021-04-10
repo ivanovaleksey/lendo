@@ -5,6 +5,7 @@ import (
 	"github.com/brianvoe/gofakeit"
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	commonModels "github.com/ivanovaleksey/lendo/pkg/models"
+	"github.com/ivanovaleksey/lendo/pkg/test"
 	"github.com/ivanovaleksey/lendo/registry/config"
 	"github.com/ivanovaleksey/lendo/registry/models"
 	uuid "github.com/satori/go.uuid"
@@ -47,6 +48,8 @@ type fixture struct {
 }
 
 func newFixture(t *testing.T) *fixture {
+	test.LoadRegistryEnv(t)
+
 	cfg, err := config.New()
 	require.NoError(t, err)
 

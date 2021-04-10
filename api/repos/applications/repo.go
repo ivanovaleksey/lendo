@@ -91,12 +91,12 @@ func (impl *Repo) GetList(ctx context.Context, params GetListParams) ([]models.A
 
 func (impl *Repo) GetByID(ctx context.Context, id uuid.UUID) (models.Application, error) {
 	const query = `
-		SELECT id, first_name, last_name, status
-		FROM ` + tableName + `
-		WHERE id = $1
+		SELECT row_to_json(t)
+		FROM ` + tableName + ` AS t
+		WHERE t.id = $1
 	`
 	var item models.Application
-	err := impl.db.GetContext(ctx, &item, query, id)
+	err := impl.db.QueryRowxContext(ctx, query, id).Scan(&item)
 	switch {
 	case err == sql.ErrNoRows:
 		return models.Application{}, ErrNotFound

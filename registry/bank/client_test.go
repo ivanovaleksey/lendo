@@ -80,7 +80,7 @@ func TestImpl_CreateApplication(t *testing.T) {
 				"last_name": "` + application.LastName + `",
 				"status": "` + status + `"
 			}`
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusCreated)
 			_, err := w.Write([]byte(resp))
 			require.NoError(t, err)
 		})

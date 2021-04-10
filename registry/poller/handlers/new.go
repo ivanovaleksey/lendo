@@ -14,10 +14,11 @@ type NewJobHandler struct {
 	Handler
 }
 
-func NewNewJobHandler(bank Bank, notifier Notifier) *NewJobHandler {
+func NewNewJobHandler(bank Bank, repo Repo, notifier Notifier) *NewJobHandler {
 	return &NewJobHandler{
 		Handler: Handler{
 			bank:     bank,
+			repo:     repo,
 			notifier: notifier,
 		},
 	}
@@ -31,7 +32,7 @@ func (h *NewJobHandler) Handle(ctx context.Context, tx sqlx.ExecerContext, job m
 
 	job.Status = models.JobStatusPending
 	job.Application.Status = status
-	err = h.UpdateJob(ctx, tx, job)
+	err = h.repo.UpdateJobTx(ctx, tx, job)
 	if err != nil {
 		return errors.Wrap(err, "can't update application status")
 	}

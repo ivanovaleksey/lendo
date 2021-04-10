@@ -13,6 +13,12 @@ func WithBank(b handlers.Bank) Option {
 	}
 }
 
+func WithRepo(r handlers.Repo) Option {
+	return func(p *Poller) {
+		p.repo = r
+	}
+}
+
 func WithNotifier(n handlers.Notifier) Option {
 	return func(p *Poller) {
 		p.notifier = n
@@ -31,8 +37,14 @@ func WithNumWorkers(num int) Option {
 	}
 }
 
-func WithTickerProvider(provider TickerProvider) Option {
+func WithTickerFactory(f TickerFactory) Option {
 	return func(p *Poller) {
-		p.tickerProvider = provider
+		p.tickerFactory = f
+	}
+}
+
+func WithWorkerFactory(f WorkerFactory) Option {
+	return func(p *Poller) {
+		p.workerFactory = f
 	}
 }

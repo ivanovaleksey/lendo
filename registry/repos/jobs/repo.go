@@ -5,6 +5,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	"github.com/ivanovaleksey/lendo/registry/models"
+	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -37,12 +38,15 @@ func (repo *Repo) CreateJob(ctx context.Context, job models.Job) (uuid.UUID, err
 }
 
 func (repo *Repo) UpdateJob(ctx context.Context, job models.Job) error {
+	return repo.UpdateJobTx(ctx, repo.db, job)
+}
+
+func (repo *Repo) UpdateJobTx(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error {
 	const query = `
 		UPDATE jobs
-		SET status = $2
+		SET status = $2, application = $3, updated_at = now()
 		WHERE id = $1
 	`
-
-	_, err := repo.db.ExecContext(ctx, query, job.ID, job.Status)
+	_, err := tx.ExecContext(ctx, query, job.ID, job.Status, job.Application)
 	return err
 }

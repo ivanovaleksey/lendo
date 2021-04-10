@@ -18,18 +18,13 @@ type Notifier interface {
 	ApplicationStatusChanged(ctx context.Context, change commonModels.StatusChange) error
 }
 
+type Repo interface {
+	UpdateJobTx(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error
+}
+
 type Handler struct {
+	repo     Repo
 	bank     Bank
 	notifier Notifier
 	logger   log.FieldLogger
-}
-
-func (h *Handler) UpdateJob(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error {
-	const query = `
-		UPDATE jobs
-		SET status = $2, application = $3, updated_at = now()
-		WHERE id = $1
-	`
-	_, err := tx.ExecContext(ctx, query, job.ID, job.Status, job.Application)
-	return err
 }

@@ -1,4 +1,4 @@
-package poller
+package worker
 
 import (
 	"context"
@@ -11,18 +11,33 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type worker struct {
-	db       *db.DB
-	logger   log.FieldLogger
-	ticker   ticker.Ticker
-	handlers map[models.JobStatus]JobHandler
+type Worker struct {
+	id        int
+	txFactory db.TxFactory
+	logger    log.FieldLogger
+	ticker    ticker.Ticker
+	handlers  map[models.JobStatus]Handler
 }
 
-type JobHandler interface {
+type Handler interface {
 	Handle(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error
 }
 
-func (w *worker) Run(ctx context.Context) error {
+func New(opts ...Option) *Worker {
+	w := &Worker{
+		handlers: make(map[models.JobStatus]Handler),
+	}
+	for _, opt := range opts {
+		opt(w)
+	}
+	w.logger = log.WithFields(log.Fields{
+		"component": "worker",
+		"id":        w.id,
+	})
+	return w
+}
+
+func (w *Worker) Run(ctx context.Context) error {
 	defer w.ticker.Stop()
 
 	for {
@@ -38,25 +53,18 @@ func (w *worker) Run(ctx context.Context) error {
 	}
 }
 
-func (w *worker) doWork(ctx context.Context) error {
+func (w *Worker) doWork(ctx context.Context) error {
 	w.logger.Debug("do work")
 
-	tx, err := w.db.BeginTxx(ctx, nil)
+	tx, err := w.txFactory.Begin(ctx)
 	if err != nil {
 		return errors.Wrap(err, "can't begin tx")
 	}
 
-	if err := w.doWorkTx(ctx, tx); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			w.logger.Error(errors.Wrap(rErr, "can't rollback tx"))
-		}
-		return err
-	}
-
-	return tx.Commit()
+	return tx.Do(ctx, w.doWorkTx)
 }
 
-func (w *worker) doWorkTx(ctx context.Context, tx *sqlx.Tx) error {
+func (w *Worker) doWorkTx(ctx context.Context, tx db.SQLTx) error {
 	const query = `
 		SELECT id, application, status
 		FROM jobs
@@ -67,7 +75,7 @@ func (w *worker) doWorkTx(ctx context.Context, tx *sqlx.Tx) error {
 	`
 
 	var job models.Job
-	err := tx.GetContext(ctx, &job, query)
+	err := tx.QueryRowxContext(ctx, query).StructScan(&job)
 	switch {
 	case err == sql.ErrNoRows:
 		w.logger.Debug("no work")
@@ -75,8 +83,6 @@ func (w *worker) doWorkTx(ctx context.Context, tx *sqlx.Tx) error {
 	case err != nil:
 		return errors.Wrap(err, "can't get job")
 	}
-
-	log.Debug(job)
 
 	handler, ok := w.handlers[job.Status]
 	if !ok {

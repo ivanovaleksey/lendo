@@ -65,7 +65,7 @@ func (client *Client) CreateApplication(ctx context.Context, application models.
 	defer resp.Body.Close()
 
 	switch code := resp.StatusCode; code {
-	case 200:
+	case 201:
 		var respBody struct {
 			Status string `json:"status"`
 		}

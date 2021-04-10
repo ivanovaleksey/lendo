@@ -15,10 +15,11 @@ type PendingJobHandler struct {
 	Handler
 }
 
-func NewPendingJobHandler(bank Bank, notifier Notifier) *PendingJobHandler {
+func NewPendingJobHandler(bank Bank, repo Repo, notifier Notifier) *PendingJobHandler {
 	return &PendingJobHandler{
 		Handler: Handler{
 			bank:     bank,
+			repo:     repo,
 			notifier: notifier,
 			logger:   log.WithField("handler", "pending"),
 		},
@@ -40,7 +41,7 @@ func (h *PendingJobHandler) Handle(ctx context.Context, tx sqlx.ExecerContext, j
 
 	job.Status = models.JobStatusDone
 	job.Application.Status = status
-	err = h.UpdateJob(ctx, tx, job)
+	err = h.repo.UpdateJobTx(ctx, tx, job)
 	if err != nil {
 		return errors.Wrap(err, "can't update application status")
 	}

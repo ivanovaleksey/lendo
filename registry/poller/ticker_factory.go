@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-type TickerProvider interface {
+type TickerFactory interface {
 	NewTicker() ticker.Ticker
 }
 
-type stdTickerProvider struct {
+type stdTickerFactory struct {
 	duration time.Duration
 }
 
-func (p stdTickerProvider) NewTicker() ticker.Ticker {
+func (p stdTickerFactory) NewTicker() ticker.Ticker {
 	return ticker.NewTicker(p.duration)
 }

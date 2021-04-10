@@ -2,11 +2,11 @@ package applicationsRepo
 
 import (
 	"context"
-	"database/sql"
 	"github.com/brianvoe/gofakeit"
 	"github.com/ivanovaleksey/lendo/api/config"
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	"github.com/ivanovaleksey/lendo/pkg/models"
+	"github.com/ivanovaleksey/lendo/pkg/test"
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ func TestImpl_GetByID(t *testing.T) {
 
 		application, err := fx.repo.GetByID(fx.ctx, id)
 
-		require.Equal(t, sql.ErrNoRows, err)
+		require.Equal(t, ErrNotFound, err)
 		assert.Empty(t, application)
 	})
 
@@ -80,6 +80,8 @@ type fixture struct {
 }
 
 func newFixture(t *testing.T) *fixture {
+	test.LoadAPIEnv(t)
+
 	cfg, err := config.New()
 	require.NoError(t, err)
 
@@ -108,7 +110,7 @@ func (fx *fixture) createApplication(item models.Application) (id uuid.UUID) {
 }
 
 func (fx *fixture) getApplication(id uuid.UUID) (item models.Application) {
-	const q = `SELECT id, first_name, last_name, status FROM applications WHERE id = $1`
+	const q = `SELECT row_to_json(applications) FROM applications WHERE id = $1`
 	err := fx.db.GetContext(fx.ctx, &item, q, id)
 	require.NoError(fx.t, err)
 	return

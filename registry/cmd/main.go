@@ -68,11 +68,13 @@ func runApps(ctx context.Context, cfg config.Config) error {
 
 	{
 		bankClient := bank.NewClient(cfg.Bank)
+		repo := jobsRepo.New(db)
 		pub := applicationsPubSub.NewPub(natsClient)
 
 		opts := []poller.Option{
 			poller.WithDB(db),
 			poller.WithBank(bankClient),
+			poller.WithRepo(repo),
 			poller.WithNotifier(pub),
 		}
 		closure := component.Run(ctx, poller.New(opts...))
