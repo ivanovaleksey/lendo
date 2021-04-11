@@ -52,11 +52,15 @@ func (params Pagination) GetLimit() int {
 
 func (impl *Repo) GetList(ctx context.Context, params GetListParams) ([]models.Application, int, error) {
 	qb := impl.builder.
-		Select("*").
+		Select("id, first_name", "last_name", "status", "count(*) over () AS total").
 		From(tableName).
 		OrderBy("created_at").
 		Offset(uint64(params.Offset)).
 		Limit(uint64(params.GetLimit()))
+
+	if params.Status != "" {
+		qb = qb.Where(squirrel.Eq{"status": params.Status})
+	}
 
 	query, args, err := qb.ToSql()
 	if err != nil {

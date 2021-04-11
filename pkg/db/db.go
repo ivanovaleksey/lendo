@@ -25,10 +25,6 @@ func New(cfg Config) (*DB, error) {
 	return &DB{DB: db}, nil
 }
 
-// todo:
-// Note: if you open a secondary database, make sure to differianciate
-// the dsn string when opening the sql.DB. The transaction will be
-// isolated within that dsn
 func NewTestDB(t *testing.T, cfg Config) *DB {
 	driver := uuid.NewV4().String()
 	txdb.Register(driver, "postgres", cfg.URL)

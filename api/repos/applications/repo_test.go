@@ -12,10 +12,88 @@ import (
 	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestImpl_GetList(t *testing.T) {
-	t.Skip("not implemented")
+	t.Run("should return list and total", func(t *testing.T) {
+		const num = 5
+
+		fx := newFixture(t)
+		defer fx.Finish()
+
+		var applications []models.Application
+		for i := 0; i < num; i++ {
+			applications = append(applications, fx.createApplication())
+		}
+
+		params := GetListParams{}
+		list, total, err := fx.repo.GetList(fx.ctx, params)
+
+		require.NoError(t, err)
+		assert.Equal(t, applications, list)
+		assert.Equal(t, num, total)
+	})
+
+	t.Run("should filter by status", func(t *testing.T) {
+		fx := newFixture(t)
+		defer fx.Finish()
+
+		applications := []models.Application{
+			fx.createApplicationWithStatus(models.ApplicationStatusNew),
+			fx.createApplicationWithStatus(models.ApplicationStatusNew),
+			fx.createApplicationWithStatus(models.ApplicationStatusPending),
+			fx.createApplicationWithStatus(models.ApplicationStatusCompleted),
+		}
+
+		params := GetListParams{
+			Status: models.ApplicationStatusPending,
+		}
+		list, total, err := fx.repo.GetList(fx.ctx, params)
+
+		require.NoError(t, err)
+		assert.Equal(t, []models.Application{applications[2]}, list)
+		assert.Equal(t, 1, total)
+	})
+
+	t.Run("should paginate", func(t *testing.T) {
+		const num = 5
+
+		fx := newFixture(t)
+		defer fx.Finish()
+
+		var applications []models.Application
+		for i := 0; i < num; i++ {
+			applications = append(applications, fx.createApplication())
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		params := GetListParams{
+			Pagination: Pagination{
+				Offset: 0,
+				Limit:  2,
+			},
+		}
+		list, total, err := fx.repo.GetList(fx.ctx, params)
+
+		require.NoError(t, err)
+		assert.Equal(t, applications[:2], list)
+		assert.Equal(t, num, total)
+
+		params.Offset += 2
+		list, total, err = fx.repo.GetList(fx.ctx, params)
+
+		require.NoError(t, err)
+		assert.Equal(t, applications[2:4], list)
+		assert.Equal(t, num, total)
+
+		params.Offset += 2
+		list, total, err = fx.repo.GetList(fx.ctx, params)
+
+		require.NoError(t, err)
+		assert.Equal(t, applications[4:], list)
+		assert.Equal(t, num, total)
+	})
 }
 
 func TestImpl_GetByID(t *testing.T) {
@@ -42,7 +120,7 @@ func TestImpl_GetByID(t *testing.T) {
 			},
 			Status: models.ApplicationStatusPending,
 		}
-		item.ID = fx.createApplication(item)
+		item.ID = fx.insertApplication(item)
 
 		application, err := fx.repo.GetByID(fx.ctx, item.ID)
 
@@ -98,10 +176,26 @@ func (fx *fixture) Finish() {
 	require.NoError(fx.t, fx.db.Close())
 }
 
-func (fx *fixture) createApplication(item models.Application) (id uuid.UUID) {
+func (fx *fixture) createApplication() models.Application {
+	return fx.createApplicationWithStatus(randomStatus())
+}
+
+func (fx *fixture) createApplicationWithStatus(status models.ApplicationStatus) models.Application {
+	item := models.Application{
+		NewApplication: models.NewApplication{
+			FirstName: gofakeit.FirstName(),
+			LastName:  gofakeit.LastName(),
+		},
+		Status: status,
+	}
+	item.ID = fx.insertApplication(item)
+	return item
+}
+
+func (fx *fixture) insertApplication(item models.Application) (id uuid.UUID) {
 	const q = `
-		INSERT INTO applications(first_name, last_name, status)
-		VALUES ($1, $2, $3)
+		INSERT INTO applications(first_name, last_name, status, created_at)
+		VALUES ($1, $2, $3, clock_timestamp())
 		RETURNING id
 	`
 	err := fx.db.GetContext(fx.ctx, &id, q, item.FirstName, item.LastName, item.Status)

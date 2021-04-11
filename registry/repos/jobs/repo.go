@@ -9,6 +9,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+const (
+	tableName = "jobs"
+)
+
 type Repo struct {
 	db      *db.DB
 	builder squirrel.StatementBuilderType
@@ -24,7 +28,7 @@ func New(database *db.DB) *Repo {
 
 func (repo *Repo) CreateJob(ctx context.Context, job models.Job) (uuid.UUID, error) {
 	const query = `
-		INSERT INTO jobs (application, status)
+		INSERT INTO ` + tableName + ` (application, status)
 		VALUES ($1, $2)
 		RETURNING id
 	`
@@ -43,7 +47,7 @@ func (repo *Repo) UpdateJob(ctx context.Context, job models.Job) error {
 
 func (repo *Repo) UpdateJobTx(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error {
 	const query = `
-		UPDATE jobs
+		UPDATE ` + tableName + `
 		SET status = $2, application = $3, updated_at = now()
 		WHERE id = $1
 	`
