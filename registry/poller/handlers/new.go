@@ -6,6 +6,7 @@ import (
 	"github.com/ivanovaleksey/lendo/registry/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // NewJobHandler registers a new application in a bank system
@@ -20,11 +21,14 @@ func NewNewJobHandler(bank Bank, repo Repo, notifier Notifier) *NewJobHandler {
 			bank:     bank,
 			repo:     repo,
 			notifier: notifier,
+			logger:   log.WithField("handler", "new"),
 		},
 	}
 }
 
 func (h *NewJobHandler) Handle(ctx context.Context, tx sqlx.ExecerContext, job models.Job) error {
+	logger := h.logger.WithField("job_id", job.ID.String())
+
 	status, err := h.bank.CreateApplication(ctx, job.Application)
 	if err != nil {
 		return errors.Wrap(err, "can't create application in bank")
@@ -43,7 +47,7 @@ func (h *NewJobHandler) Handle(ctx context.Context, tx sqlx.ExecerContext, job m
 	}
 	err = h.notifier.ApplicationStatusChanged(ctx, notification)
 	if err != nil {
-		return errors.Wrap(err, "can't send notification")
+		logger.Errorf("can't send notification: %v", err)
 	}
 
 	return nil

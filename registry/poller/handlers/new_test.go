@@ -62,7 +62,7 @@ func TestNewJobHandler_Handle(t *testing.T) {
 		assert.Equal(t, repoErr, errors.Cause(err))
 	})
 
-	t.Run("when cannot notify about status change", func(t *testing.T) {
+	t.Run("when cannot notify about status change should not fail", func(t *testing.T) {
 		fx := newNewHandlerFixture(t)
 		defer fx.Finish()
 
@@ -83,7 +83,7 @@ func TestNewJobHandler_Handle(t *testing.T) {
 
 		err := fx.handler.Handle(fx.ctx, fx.tx, newJob)
 
-		assert.Equal(t, notifierErr, errors.Cause(err))
+		assert.NoError(t, err)
 	})
 
 	t.Run("when everything is fine should move to pending", func(t *testing.T) {
