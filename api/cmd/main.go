@@ -1,3 +1,5 @@
+//go:generate swagger generate spec -o ../docs/swagger.json
+
 package main
 
 import (

@@ -69,7 +69,7 @@ func TestImpl_GetList(t *testing.T) {
 		}
 
 		params := GetListParams{
-			Pagination: Pagination{
+			PaginationParams: Pagination{
 				Offset: 0,
 				Limit:  2,
 			},

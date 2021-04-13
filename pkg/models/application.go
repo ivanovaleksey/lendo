@@ -8,7 +8,9 @@ import (
 )
 
 type NewApplication struct {
+	// required: true
 	FirstName string `json:"first_name" db:"first_name" validate:"required"`
+	// required: true
 	LastName  string `json:"last_name" db:"last_name" validate:"required"`
 }
 

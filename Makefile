@@ -1,3 +1,4 @@
+SWAGGER_VERSION = 2.2.10
 API_VERSION ?= v0.1
 MIGRATIONS_API_VERSION ?= v0.1
 MIGRATIONS_REGISTRY_VERSION ?= v0.1
@@ -46,3 +47,25 @@ migrate-db: create-db
 .PHONY: create-api
 create-api:
 	kubectl apply -f k8s/api.yaml
+
+.PHONY: docs
+docs:
+	mkdir -p api/docs
+
+.PHONY: swagger
+swagger: docs
+	curl -s https://codeload.github.com/swagger-api/swagger-ui/tar.gz/v$(SWAGGER_VERSION) | tar xzv -C api/docs swagger-ui-$(SWAGGER_VERSION)/dist
+	mv -f api/docs/swagger-ui-$(SWAGGER_VERSION)/dist/* api/docs/
+	rm -rf api/docs/swagger-ui-$(SWAGGER_VERSION) api/docs/swagger-ui.js
+	sed -i_ "s/swagger-ui\.js/swagger-ui\.min\.js/" api/docs/index.html
+	sed -i_ "s/http:\/\/petstore\.swagger\.io\/v2\///" api/docs/index.html
+	rm -f api/docs/*_
+
+.PHONY: clean
+clean:
+	rm -rf api/docs
+	find . -name '*.mock.go' -delete
+
+.PHONY: generate
+generate:
+	go generate ./...

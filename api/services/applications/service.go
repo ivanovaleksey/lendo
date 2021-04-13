@@ -53,7 +53,7 @@ func (srv *Service) Create(ctx context.Context, item models.NewApplication) (uui
 	}
 
 	application.ID = id
-	log.Debugf("notify applications.new: %v", application)
+	log.Debugf("notify applications.new: %+v", application)
 	err = srv.notifier.NewApplication(ctx, application)
 	if err != nil {
 		log.Error(errors.Wrap(err, "can't notify"))

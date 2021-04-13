@@ -1,3 +1,13 @@
+// Package app API
+//
+// Lendo service methods description
+//
+// BasePath: /api
+// Version: 0.1
+// Produces:
+//  - application/json
+// Schemes: http, https
+// swagger:meta
 package app
 
 import (
@@ -29,6 +39,11 @@ func New(cfg config.Config, opts ...Option) *API {
 
 func (api *API) initRouter() {
 	router := chi.NewRouter()
+
+	router.Route("/docs", func(r chi.Router) {
+		r.Handle("/*", http.StripPrefix("/docs", http.FileServer(http.Dir("api/docs"))))
+	})
+
 	router.Route("/api", func(r chi.Router) {
 		r.Route("/applications", func(r chi.Router) {
 			r.Get("/", api.GetApplications())

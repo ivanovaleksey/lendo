@@ -6,8 +6,8 @@ metadata:
     app: api
 data:
   LENDO_ADDR: :8000
-  LENDO_DB_URL: postgres://lendouser:lendopass@postgres/lendo?sslmode=disable
-  LENDO_RABBITMQ_URL: amqp://localhost:5672
+  LENDO_DB_URL: postgres://lendouser:lendopass@postgres/api?sslmode=disable
+  LENDO_NATS_URL: nats://nats:4222
 ---
 apiVersion: v1
 kind: Service

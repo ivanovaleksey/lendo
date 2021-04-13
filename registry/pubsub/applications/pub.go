@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ivanovaleksey/lendo/pkg/models"
-	"github.com/ivanovaleksey/lendo/pkg/nats"
 )
 
 type Pub struct {
-	client *nats.Client
+	client PubClient
 }
 
-func NewPub(client *nats.Client) *Pub {
+type PubClient interface {
+	Publish(subj string, data []byte) error
+}
+
+func NewPub(client PubClient) *Pub {
 	pub := &Pub{
 		client: client,
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/Masterminds/squirrel"
+	apiModels "github.com/ivanovaleksey/lendo/api/models"
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	"github.com/ivanovaleksey/lendo/pkg/models"
 	"github.com/pkg/errors"
@@ -32,22 +33,8 @@ func New(database *db.DB) *Repo {
 }
 
 type GetListParams struct {
-	Pagination
+	apiModels.PaginationParams
 	Status string
-}
-
-type Pagination struct {
-	Offset int
-	Limit  int
-}
-
-func (params Pagination) GetLimit() int {
-	const defaultLimit = 10
-
-	if params.Limit > 0 {
-		return params.Limit
-	}
-	return defaultLimit
 }
 
 func (impl *Repo) GetList(ctx context.Context, params GetListParams) ([]models.Application, int, error) {
