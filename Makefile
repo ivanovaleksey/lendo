@@ -1,5 +1,6 @@
 SWAGGER_VERSION = 2.2.10
 API_VERSION ?= v0.1
+REGISTRY_VERSION ?= v0.1
 MIGRATIONS_API_VERSION ?= v0.1
 MIGRATIONS_REGISTRY_VERSION ?= v0.1
 COMPONENT_EXE = bin/$(COMPONENT)
@@ -27,26 +28,14 @@ build-image-migrations:
 build-image-api:
 	docker build -t lendo/api:$(API_VERSION) -f docker/api.Dockerfile .
 
+.PHONY: build-image-registry
+build-image-registry:
+	docker build -t lendo/registry:$(REGISTRY_VERSION) -f docker/registry.Dockerfile .
+
 .PHONY: test-unit
 test-unit:
 	go test -v -count=1 ./api/...
 	go test -v -count=1 ./registry/...
-
-.PHONY: create-db-server
-create-db-server:
-	kubectl apply -f k8s/pg.yaml
-
-.PHONY: create-db
-create-db: create-db-server
-	kubectl apply -f k8s/create_db.yaml
-
-.PHONY: migrate-db
-migrate-db: create-db
-	kubectl apply -f k8s/migrations.yaml
-
-.PHONY: create-api
-create-api:
-	kubectl apply -f k8s/api.yaml
 
 .PHONY: docs
 docs:
