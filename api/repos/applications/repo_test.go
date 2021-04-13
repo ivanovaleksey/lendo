@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/brianvoe/gofakeit"
 	"github.com/ivanovaleksey/lendo/api/config"
+	apiModels "github.com/ivanovaleksey/lendo/api/models"
 	"github.com/ivanovaleksey/lendo/pkg/db"
 	"github.com/ivanovaleksey/lendo/pkg/models"
 	"github.com/ivanovaleksey/lendo/pkg/test"
@@ -69,7 +70,7 @@ func TestImpl_GetList(t *testing.T) {
 		}
 
 		params := GetListParams{
-			PaginationParams: Pagination{
+			PaginationParams: apiModels.PaginationParams{
 				Offset: 0,
 				Limit:  2,
 			},
