@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
         - name: migrate-api
-          image: lendo/migrations-api:v0.1
+          image: ramone/lendo-migrations-api:v0.1
           imagePullPolicy: "Never"
           envFrom:
             - configMapRef:
@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: migrate-registry
-          image: lendo/migrations-registry:v0.1
+          image: ramone/lendo-migrations-registry:v0.1
           imagePullPolicy: "Never"
           envFrom:
             - configMapRef:

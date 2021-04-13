@@ -1,4 +1,6 @@
-FROM golang:1.16
+FROM golang:1.16-alpine
+
+RUN apk add --update make
 
 WORKDIR /app
 

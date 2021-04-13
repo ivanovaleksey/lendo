@@ -5,11 +5,6 @@ MIGRATIONS_API_VERSION ?= v0.1
 MIGRATIONS_REGISTRY_VERSION ?= v0.1
 COMPONENT_EXE = bin/$(COMPONENT)
 
-ifneq (,$(wildcard ./.env))
-	include .env
-	export
-endif
-
 .PHONY: build-all
 build-all:
 	make build-app COMPONENT=api
@@ -21,16 +16,16 @@ build-app:
 
 .PHONY: build-image-migrations
 build-image-migrations:
-	docker build -t lendo/migrations-api:$(MIGRATIONS_API_VERSION) -f docker/migrations-api.Dockerfile .
-	docker build -t lendo/migrations-registry:$(MIGRATIONS_REGISTRY_VERSION) -f docker/migrations-registry.Dockerfile .
+	docker build -t ramone/lendo-migrations-api:$(MIGRATIONS_API_VERSION) -f docker/migrations-api.Dockerfile .
+	docker build -t ramone/lendo-migrations-registry:$(MIGRATIONS_REGISTRY_VERSION) -f docker/migrations-registry.Dockerfile .
 
 .PHONY: build-image-api
 build-image-api:
-	docker build -t lendo/api:$(API_VERSION) -f docker/api.Dockerfile .
+	docker build -t ramone/lendo-api:$(API_VERSION) -f docker/api.Dockerfile .
 
 .PHONY: build-image-registry
 build-image-registry:
-	docker build -t lendo/registry:$(REGISTRY_VERSION) -f docker/registry.Dockerfile .
+	docker build -t ramone/lendo-registry:$(REGISTRY_VERSION) -f docker/registry.Dockerfile .
 
 .PHONY: test-unit
 test-unit:

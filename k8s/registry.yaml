@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: registry
-          image: lendo/registry:v0.1
+          image: ramone/lendo-registry:v0.1
           imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 8000
