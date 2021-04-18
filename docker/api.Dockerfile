@@ -13,7 +13,7 @@ COPY Makefile Makefile
 COPY api/ api/
 COPY pkg/ pkg/
 
-ENV COMPONENT api
+ARG COMPONENT=api
 RUN make build-app
 
 EXPOSE 8000

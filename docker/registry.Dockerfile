@@ -13,7 +13,7 @@ COPY Makefile Makefile
 COPY registry/ registry/
 COPY pkg/ pkg/
 
-ENV COMPONENT registry
+ARG COMPONENT=registry
 RUN make build-app
 
 CMD ["bin/registry"]
